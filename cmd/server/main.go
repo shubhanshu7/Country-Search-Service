@@ -2,7 +2,10 @@ package main
 
 import (
 	"context"
+	"countrySearchService/internal/cache"
+	"countrySearchService/internal/countries"
 	"countrySearchService/internal/httpapi"
+	"countrySearchService/internal/service"
 	"log"
 	"net/http"
 	"os"
@@ -12,12 +15,17 @@ import (
 
 func main() {
 	//cache
+	mem := cache.NewMemoryCache()
+
 	//client timeout
+	client := countries.NewRestCountriesClient(5 * time.Second)
 	//service layer
+	svc := service.NewCountryService(mem, client)
 	//api
+	api := httpapi.NewServer(svc)
 
 	mux := http.NewServeMux()
-	httpapi.Routes(mux)
+	api.Routes(mux)
 
 	srv := &http.Server{
 		Addr:        ":8000",
