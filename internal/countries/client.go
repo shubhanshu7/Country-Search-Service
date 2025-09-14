@@ -60,15 +60,13 @@ func (c *RestCountriesClient) FetchByName(ctx context.Context, name string) (Cou
 	}
 	defer resp.Body.Close()
 	if resp.StatusCode != http.StatusOK {
-		return Country{}, fmt.Errorf("error fetching %s named country", name)
+		return Country{}, ErrNotFound
 	}
 	var resultCountry []rcCountry
 	if err := json.NewDecoder(resp.Body).Decode(&resultCountry); err != nil {
 		return Country{}, err
 	}
-	if len(resultCountry) == 0 {
-		return Country{}, ErrNotFound
-	}
+
 	id := 0
 	for i := range resultCountry {
 		if strings.EqualFold(resultCountry[i].Name.Common, name) {
