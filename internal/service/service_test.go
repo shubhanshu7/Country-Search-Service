@@ -41,12 +41,10 @@ func TestService_CacheHitMiss(t *testing.T) {
 	fc := &fakeClient{resp: countries.Country{Name: "India"}}
 	s := NewCountryService(mem, fc)
 
-	// set
 	got1, err := s.Search(context.Background(), "India")
 	require.NoError(t, err)
 	require.Equal(t, "India", got1.Name)
 
-	//  no new fetch
 	got2, err := s.Search(context.Background(), "India")
 	require.NoError(t, err)
 	require.Equal(t, "India", got2.Name)
@@ -54,6 +52,36 @@ func TestService_CacheHitMiss(t *testing.T) {
 	fc.callsMu.Lock()
 	defer fc.callsMu.Unlock()
 	require.Equal(t, 1, fc.calls)
+}
+
+func TestService_ConcurrentRequests(t *testing.T) {
+	mem := cache.NewMemoryCache()
+	fc := &fakeClient{
+		delay: 20 * time.Millisecond,
+		resp:  countries.Country{Name: "India"},
+	}
+	s := NewCountryService(mem, fc)
+
+	var wg sync.WaitGroup
+	results := make(chan error, 50)
+	for i := 0; i < 50; i++ {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			_, err := s.Search(context.Background(), "India")
+			results <- err
+		}()
+	}
+	wg.Wait()
+	close(results)
+	for err := range results {
+		require.NoError(t, err)
+	}
+
+	fc.callsMu.Lock()
+	calls := fc.calls
+	fc.callsMu.Unlock()
+	require.Less(t, calls, 51)
 }
 
 func TestService_ValidateName(t *testing.T) {

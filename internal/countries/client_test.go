@@ -45,4 +45,15 @@ func TestFetchByName(t *testing.T) {
 	require.Equal(t, "Delhi", result.Capital)
 	require.Equal(t, "₹", result.Currency)
 	require.EqualValues(t, 100, result.Population)
+
+	restcountry := NewRestCountriesClient(time.Second)
+	require.Equal(t, time.Second, restcountry.http.Timeout)
+}
+func TestFetchByName_BadRequestURL(t *testing.T) {
+	c := &RestCountriesClient{
+		http: &http.Client{Timeout: time.Second},
+		base: "http://wrongurl",
+	}
+	_, err := c.FetchByName(context.Background(), "India")
+	require.Error(t, err)
 }

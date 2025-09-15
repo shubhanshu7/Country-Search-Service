@@ -28,9 +28,11 @@ func main() {
 	api.Routes(mux)
 
 	srv := &http.Server{
-		Addr:        ":8000",
-		Handler:     mux,
-		IdleTimeout: 30 * time.Second,
+		Addr:         ":8000",
+		Handler:      mux,
+		ReadTimeout:  5 * time.Second,
+		WriteTimeout: 5 * time.Second,
+		IdleTimeout:  30 * time.Second,
 	}
 	go func() {
 		log.Printf("listening on %s", srv.Addr)
